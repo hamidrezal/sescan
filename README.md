@@ -14,7 +14,7 @@ Advanced security headers analysis tool that checks CSP, HSTS, X-Frame-Options, 
 ## Quick Installation
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/hamidrezal/sescan.git
 cd security-headers-scanner
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
