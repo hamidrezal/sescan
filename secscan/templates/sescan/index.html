@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Headers Scanner | Advanced Security Analysis Tool</title>
+    <meta name="description" content="Free comprehensive security headers analysis tool. Check CSP, HSTS, X-Frame-Options and more.">
+
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body class="gradient-bg min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">SecScan</h1>
+                        <p class="text-xs text-gray-500">Security Headers Analyzer</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <a href="#" class="text-gray-600 hover:text-gray-900 transition"><i class="fas fa-home mr-2"></i>Home</a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 transition"><i class="fas fa-chart-line mr-2"></i>Dashboard</a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 transition"><i class="fas fa-file-alt mr-2"></i>Documentation</a>
+                </div>
+                <button onclick="toggleTheme()" class="text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-moon text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Hero Section -->
+        <div class="text-center mb-12 slide-in">
+            <div class="inline-block p-3 bg-white/20 rounded-full backdrop-blur-sm mb-4">
+                <i class="fas fa-shield-virus text-white text-4xl"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                Security Headers Scanner
+            </h1>
+            <p class="text-lg text-white/90 max-w-2xl mx-auto">
+                Analyze security headers, get detailed reports, and improve your website's security posture
+            </p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden mb-8 slide-in">
+            <div class="p-6 md:p-8">
+                <form method="GET" id="checkForm" class="space-y-4">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-link text-gray-400"></i>
+                        </div>
+                        <input type="text"
+                               name="url"
+                               id="urlInput"
+                               placeholder="Enter website URL (e.g., https://example.com)"
+                               value="{{ report.url|default:''|cut:'https://'|cut:'http://' }}"
+                               class="w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition text-lg">
+                    </div>
+                    <button type="submit" class="w-full gradient-bg text-white py-4 rounded-xl font-semibold hover:opacity-90 transition transform hover:scale-105 flex items-center justify-center gap-2">
+                        <i class="fas fa-search"></i>
+                        <span>Scan Website</span>
+                    </button>
+                </form>
+
+                <!-- Loading State -->
+                <div id="loading" class="hidden mt-8 text-center">
+                    <div class="inline-block">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                        <p class="text-gray-600">Analyzing security headers...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if error %}
+        <!-- Error Message -->
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-6 mb-8 slide-in">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-lg font-semibold text-red-800">Scan Failed</h3>
+                    <p class="text-red-700">{{ error }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if report %}
+        <!-- Results Section -->
+        <div class="space-y-6 slide-in">
+
+            <!-- Score Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Security Score -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover text-center">
+                    <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-white text-2xl"></i>
+                    </div>
+                    <div class="text-4xl font-bold text-purple-600">{{ report.security_score|floatformat:0 }}%</div>
+                    <div class="text-gray-500 mt-2">Security Score</div>
+                    <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold
+                        {% if report.grade.value == 'A+' %}bg-green-100 text-green-700
+                        {% elif report.grade.value == 'A' %}bg-emerald-100 text-emerald-700
+                        {% elif report.grade.value == 'B' %}bg-blue-100 text-blue-700
+                        {% elif report.grade.value == 'C' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        Grade {{ report.grade.value }}
+                    </span>
+                </div>
+
+                <!-- Statistics -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-chart-simple text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">✅ Present Headers</span>
+                            <span class="text-2xl font-bold text-green-600">{{ report.present_headers }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">❌ Missing Headers</span>
+                            <span class="text-2xl font-bold text-red-600">{{ report.missing_headers|length }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">🔴 Critical Missing</span>
+                            <span class="text-2xl font-bold text-orange-600">{{ report.critical_missing|length }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HTTP Status -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-globe text-purple-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold {% if report.status_code == 200 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ report.status_code }}
+                            </div>
+                            <div class="text-gray-500 text-sm">HTTP Status</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        <i class="fas fa-clock mr-1"></i> Scan: {{ report.scan_duration|floatformat:2 }}s
+                    </div>
+                </div>
+
+                <!-- SSL Status -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-lock text-green-600 text-xl"></i>
+                        </div>
+                        <div>
+                            {% if report.ssl_info.valid %}
+                            <div class="text-green-600 font-semibold">✅ Valid SSL</div>
+                            <div class="text-xs text-gray-500">{{ report.ssl_info.protocol|default:"TLS 1.3" }}</div>
+                            {% else %}
+                            <div class="text-red-600 font-semibold">❌ SSL Error</div>
+                            <div class="text-xs text-gray-500">{{ report.ssl_info.error|default:"Invalid" }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Headers Table -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="gradient-bg px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-list-ul"></i> Security Headers Analysis
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Header</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Status</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Severity</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Value / Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            {% for header in report.header_analysis %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-semibold">{{ header.name }}</td>
+                                <td class="px-6 py-4">
+                                    {% if header.present %}
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">✓ Present</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">✗ Missing</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 rounded-full text-xs
+                                        {% if header.severity == 'critical' %}bg-red-100 text-red-700
+                                        {% elif header.severity == 'high' %}bg-orange-100 text-orange-700
+                                        {% elif header.severity == 'medium' %}bg-yellow-100 text-yellow-700
+                                        {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                        {{ header.severity }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if header.present and header.value %}
+                                    <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{ header.value|truncatechars:60 }}</code>
+                                    {% else %}
+                                    <div class="text-sm text-gray-600">{{ header.recommendation|truncatechars:80 }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            {% if report.recommendations %}
+            <div class="bg-yellow-50 rounded-2xl shadow-xl p-6 border border-yellow-200">
+                <h2 class="text-xl font-bold text-yellow-800 flex items-center gap-2 mb-4">
+                    <i class="fas fa-clipboard-list"></i> Recommendations
+                </h2>
+                <div class="space-y-2">
+                    {% for rec in report.recommendations %}
+                    <div class="flex items-start gap-2 p-2 bg-white rounded-lg">
+                        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                        <span class="text-gray-700">{{ rec }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Raw Headers -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <button onclick="toggleRawHeaders()" class="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 flex justify-between items-center">
+                    <span class="font-semibold"><i class="fas fa-code mr-2"></i>Raw HTTP Headers</span>
+                    <i id="rawHeadersIcon" class="fas fa-chevron-down"></i>
+                </button>
+                <div id="rawHeadersContent" class="hidden p-6 bg-gray-900 overflow-x-auto">
+                    <pre class="text-green-400 text-xs"><code>{% for key, value in report.raw_headers.items %}{{ key }}: {{ value }}
+{% endfor %}</code></pre>
+                </div>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 flex gap-3 justify-center">
+                <button onclick="exportReport('json')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                    <i class="fas fa-file-code"></i> Export JSON
+                </button>
+                <button onclick="printReport()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button onclick="shareReport()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition">
+                    <i class="fas fa-share-alt"></i> Share
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-white/80 text-sm">
+            <p>© 2026 SecScan - Advanced Security Headers Analysis Tool</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+</body>
+</html>

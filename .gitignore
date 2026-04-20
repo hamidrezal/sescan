@@ -1,0 +1,33 @@
+#  Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django #
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
+
+# project settings
+checkheader
+tmp
+settings.py
+passenger_wsgi.py
+
+# migrations
+*/migrations/*
+*/migrations/*/**
+
+# Do not ignore the migrations folder itself and __init__.py file in any app
+!*/migrations/
+!*/migrations/__init__.py
+#IDE settings
+.idea
+gunicorn.sock
